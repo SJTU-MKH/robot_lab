@@ -102,8 +102,8 @@ class UnitreeGo2WRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.actions.joint_vel.scale = 5.0
         self.actions.joint_pos.clip = {".*": (-100.0, 100.0)}
         self.actions.joint_vel.clip = {".*": (-100.0, 100.0)}
-        self.actions.joint_pos.joint_names = self.leg_joint_names
-        self.actions.joint_vel.joint_names = self.wheel_joint_names
+        self.actions.joint_pos.joint_names = self.leg_joint_names  # 位置12 关节
+        self.actions.joint_vel.joint_names = self.wheel_joint_names  # 速度4轮子
 
         # ------------------------------Events------------------------------
         self.events.randomize_reset_base.params = {
