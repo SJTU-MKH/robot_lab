@@ -11,6 +11,7 @@ from robot_lab.tasks.manager_based.locomotion.parkour.parkour_env_cfg import (
     LocomotionVelocityRoughEnvCfg,
     RewardsCfg,
 )
+from isaaclab.sensors import RayCasterCfg, patterns
 
 ##
 # Pre-defined configs
@@ -75,10 +76,19 @@ class UnitreeGo2WRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         # ------------------------------Sence------------------------------
         self.scene.robot = UNITREE_GO2W_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+
+        # ------------------------------Height Scanner------------------------------
         self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/" + self.base_link_name
         self.scene.height_scanner_base.prim_path = "{ENV_REGEX_NS}/Robot/" + self.base_link_name
 
+        self.scene.height_scanner.pattern_cfg = patterns.GridPatternCfg(resolution=0.15, size=(1.65, 1.5))
+        self.scene.height_scanner.casting_mode = "z"  # 从上往下扫描Z轴高度，这是height_scan的关键
+        self.scene.height_scanner.offset = RayCasterCfg.OffsetCfg(pos=(0.375, 0.0, 0.5))  # 将网格中心对齐到机器人前方
+        self.scene.height_scanner.attach_yaw_only = True  # 通常只跟随基座的偏航角旋转
+
         # ------------------------------Observations------------------------------
+        # obsTerm：func，params
+    
         self.observations.policy.joint_pos.func = mdp.joint_pos_rel_without_wheel
         self.observations.policy.joint_pos.params["wheel_asset_cfg"] = SceneEntityCfg(
             "robot", joint_names=self.wheel_joint_names
@@ -91,8 +101,8 @@ class UnitreeGo2WRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.observations.policy.base_ang_vel.scale = 0.25
         self.observations.policy.joint_pos.scale = 1.0
         self.observations.policy.joint_vel.scale = 0.05
-    # 保持 base_lin_vel 默认设置（不设为 None）
-    # 保持 height_scan 默认设置（不设为 None）
+
+        
         self.observations.policy.joint_pos.params["asset_cfg"].joint_names = self.joint_names
         self.observations.policy.joint_vel.params["asset_cfg"].joint_names = self.joint_names
 

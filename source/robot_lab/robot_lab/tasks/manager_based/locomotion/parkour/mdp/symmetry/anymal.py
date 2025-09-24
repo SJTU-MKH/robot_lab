@@ -16,7 +16,7 @@ from tensordict import TensorDict
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from omni.isaac.lab.envs import ManagerBasedRLEnv
+    from omni.isaac.lab.envs import ManagerBasedRLEnv # type: ignore
 
 # specify the functions that are available for import
 __all__ = ["compute_symmetric_states"]
