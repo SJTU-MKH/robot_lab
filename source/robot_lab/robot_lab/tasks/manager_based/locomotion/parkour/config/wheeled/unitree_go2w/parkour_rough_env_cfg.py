@@ -8,7 +8,7 @@ from isaaclab.utils import configclass
 import robot_lab.tasks.manager_based.locomotion.parkour.mdp as mdp
 from robot_lab.tasks.manager_based.locomotion.parkour.parkour_env_cfg import (
     ActionsCfg,
-    LocomotionVelocityRoughEnvCfg,
+    LocomotionParkourRoughEnvCfg,
     RewardsCfg,
 )
 from isaaclab.sensors import RayCasterCfg, patterns
@@ -50,7 +50,7 @@ class UnitreeGo2WRewardsCfg(RewardsCfg):
 
 
 @configclass
-class UnitreeGo2WRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
+class UnitreeGo2WRoughEnvCfg(LocomotionParkourRoughEnvCfg):
     actions: UnitreeGo2WActionsCfg = UnitreeGo2WActionsCfg()
     rewards: UnitreeGo2WRewardsCfg = UnitreeGo2WRewardsCfg()
 
@@ -79,12 +79,9 @@ class UnitreeGo2WRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
 
         # ------------------------------Height Scanner------------------------------
         self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/" + self.base_link_name
-        self.scene.height_scanner_base.prim_path = "{ENV_REGEX_NS}/Robot/" + self.base_link_name
 
         self.scene.height_scanner.pattern_cfg = patterns.GridPatternCfg(resolution=0.15, size=(1.65, 1.5))
-        self.scene.height_scanner.casting_mode = "z"  # 从上往下扫描Z轴高度，这是height_scan的关键
         self.scene.height_scanner.offset = RayCasterCfg.OffsetCfg(pos=(0.375, 0.0, 0.5))  # 将网格中心对齐到机器人前方
-        self.scene.height_scanner.attach_yaw_only = True  # 通常只跟随基座的偏航角旋转
 
         # ------------------------------Observations------------------------------
         # obsTerm：func，params
@@ -233,8 +230,8 @@ class UnitreeGo2WRoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.terminations.illegal_contact = None
 
         # ------------------------------Curriculums------------------------------
-        # self.curriculum.command_levels.params["range_multiplier"] = (0.2, 1.0)
-        self.curriculum.command_levels = None
+        self.curriculum.command_levels.params["range_multiplier"] = (0.2, 1.0)
+        # self.curriculum.command_levels = None
 
         # ------------------------------Commands------------------------------
         # self.commands.base_velocity.ranges.lin_vel_x = (-1.5, 1.5)
