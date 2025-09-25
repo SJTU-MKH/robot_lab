@@ -38,7 +38,7 @@ import robot_lab.tasks.manager_based.locomotion.parkour.mdp as mdp
 ##
 # Pre-defined configs
 ##
-from isaaclab.terrains.config.rough import ROUGH_TERRAINS_CFG  # isort: skip
+from .utils.terrains.legged_gym_terrain import PARKOUR_TERRAINS_CFG  # isort: skip
 
 
 ##
@@ -54,7 +54,7 @@ class MySceneCfg(InteractiveSceneCfg):
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
         terrain_type="generator",
-        terrain_generator=ROUGH_TERRAINS_CFG,
+        terrain_generator=PARKOUR_TERRAINS_CFG,
         max_init_terrain_level=5,
         collision_group=-1,
         physics_material=sim_utils.RigidBodyMaterialCfg(
