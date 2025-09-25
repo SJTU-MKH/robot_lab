@@ -6,7 +6,7 @@
 """Configuration for custom terrains."""
 
 import isaaclab.terrains as terrain_gen
-
+from .mesh_parkour.parkour_terrain_cfg import SteppingStonesTerrainCfg
 from isaaclab.terrains.terrain_generator_cfg import TerrainGeneratorCfg
 
 PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
@@ -35,8 +35,11 @@ PARKOUR_TERRAINS_CFG = TerrainGeneratorCfg(
             border_width=1.0,
             holes=False,
         ),
-        "boxes": terrain_gen.MeshRandomGridTerrainCfg(
-            proportion=0.2, grid_width=0.45, grid_height_range=(0.05, 0.2), platform_width=2.0
+        "stepping_stones_generator": SteppingStonesTerrainCfg(
+            proportion=0.2,
+            stone_radius=0.2,
+            stone_height_range=(0.05, 0.2),
+            grid_resolution=1.0,
         ),
         "random_rough": terrain_gen.HfRandomUniformTerrainCfg(
             proportion=0.2, noise_range=(0.02, 0.10), noise_step=0.02, border_width=0.25

@@ -38,7 +38,7 @@ import robot_lab.tasks.manager_based.locomotion.parkour.mdp as mdp
 ##
 # Pre-defined configs
 ##
-from .utils.terrains.legged_gym_terrain import PARKOUR_TERRAINS_CFG  # isort: skip
+from .utils.terrains_asset.legged_gym_terrain import PARKOUR_TERRAINS_CFG  # isort: skip
 
 
 ##
@@ -778,6 +778,59 @@ class CurriculumCfg:
         },
     )
 
+    # env_params = CurrTerm(
+    #     func=mdp.modify_env_param,
+    #     params={
+    #         "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
+    #         "params": {
+    #             "mass": {
+    #                 "distribution": "uniform",
+    #                 "distribution_params": (0.7, 1.3),
+    #                 "operation": "scale",
+    #             },
+    #             "friction": {
+    #                 "distribution": "uniform",
+    #                 "distribution_params": (0.3, 1.0),
+    #                 "operation": "replace",
+    #             },
+    #             "restitution": {
+    #                 "distribution": "uniform",
+    #                 "distribution_params": (0.0, 0.5),
+    #                 "operation": "replace",
+    #             },
+    #             "stiffness": {
+    #                 "distribution": "uniform",
+    #                 "distribution_params": (0.5, 2.0),
+    #                 "operation": "scale",
+    #             },
+    #             "damping": {
+    #                 "distribution": "uniform",
+    #                 "distribution_params": (0.5, 2.0),
+    #                 "operation": "scale",
+    #             },
+    #         },
+    #     },
+    # )
+    #     # 定义一个或多个要学习的参数
+    #     terms={
+    #         "terrain_roughness": {
+    #             "gating_criteria": {
+    #                 # 更新条件: 当'events/episode_reward_mean' (滑动平均奖励) 大于 5.0 时
+    #                 "metric": "events/episode_reward_mean",
+    #                 "threshold": 5.0,
+    #                 "min_episodes": 50,  # 至少收集50个episode的数据再判断
+    #             },
+    #             "update_rule": "linear",  # 更新方式: 线性增加
+    #             "initial_value": 0.02,    # 初始值
+    #             "final_value": 0.1,       # 最终目标值
+    #             "completion_threshold": 0.95, # 当达到最终值的95%时，认为此项课程完成
+    #             # 关联到实际的环境参数
+    #             "target_cfg": ("scene", "terrain", "terrain_generator", "roughness_range"),
+    #             # 更新操作：将 (new_value, new_value) 写入 roughness_range
+    #             "target_update_op": lambda cfg, value: setattr(cfg, "roughness_range", (value, value)),
+    #         }
+    #     }
+    # )
 
 ##
 # Environment configuration
