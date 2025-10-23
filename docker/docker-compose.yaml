@@ -34,3 +34,29 @@ services:
     entrypoint: bash
     stdin_open: true
     tty: true
+
+
+  gym:
+    env_file: .env.base
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        - ISAACLAB_BASE_IMAGE_ARG=${ISAACLAB_BASE_IMAGE}
+        - DOCKER_ISAACLAB_EXTENSION_TEMPLATE_PATH_ARG=${DOCKER_ISAACLAB_EXTENSION_TEMPLATE_PATH}
+    image: pytorch/pytorch:1.13.1-cuda11.6-cudnn8-devel
+    container_name:  gym
+    volumes:
+      - type: bind
+        source: /home/msp/isaacgym
+        target: /workspace/parkour
+      - type: bind
+        source: /home/extreme-parkour
+        target: /workspace/extreme-parkour
+    network_mode: host
+    environment: *default-robot-lab-environment
+    deploy: *default-robot-lab-deploy
+    # This is the entrypoint for the container
+    entrypoint: bash
+    stdin_open: true
+    tty: true
