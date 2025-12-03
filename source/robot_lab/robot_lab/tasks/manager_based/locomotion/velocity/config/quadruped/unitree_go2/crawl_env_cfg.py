@@ -3,6 +3,9 @@
 
 from isaaclab.utils import configclass
 from isaaclab.terrains import TerrainImporterCfg
+from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import RewardTermCfg as RewTerm
+from isaaclab.managers import EventTermCfg as EventTerm
 
 from robot_lab.tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
     LocomotionVelocityRoughEnvCfg,
@@ -21,6 +24,9 @@ from .crawl_terrain_cfg import CRAWL_TERRAINS_CFG  # isort: skip
 from robot_lab.tasks.manager_based.locomotion.velocity.utils.terrains_asset.mesh_crawl import (
     CrawlTerrainImporter,
 )
+
+# 导入导航MDP函数
+from robot_lab.tasks.manager_based.locomotion.velocity import mdp
 
 
 @configclass
@@ -76,6 +82,21 @@ class UnitreeGo2CrawlEnvCfg(LocomotionVelocityRoughEnvCfg):
             self.joint_names
         )
 
+        # ------------------------------导航观察------------------------------
+        # 添加导航相关的观察
+        self.observations.policy.target_direction = ObsTerm(
+            func=mdp.target_direction,
+            scale=1.0,
+        )
+        self.observations.policy.target_distance = ObsTerm(
+            func=mdp.target_distance,
+            scale=0.1,  # 归一化距离
+        )
+        self.observations.policy.target_yaw_relative = ObsTerm(
+            func=mdp.target_yaw_relative,
+            scale=0.3,  # 归一化角度
+        )
+
         # ------------------------------Actions------------------------------
         # 适应爬行的动作scale
         self.actions.joint_pos.scale = {
@@ -87,6 +108,25 @@ class UnitreeGo2CrawlEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.actions.joint_pos.joint_names = self.joint_names
 
         # ------------------------------Events------------------------------
+        # 导航系统初始化（startup时调用一次）
+        self.events.initialize_navigation = EventTerm(
+            func=mdp.initialize_navigation_system,
+            mode="startup",
+        )
+
+        # 更新导航目标（每个step调用）
+        self.events.update_navigation = EventTerm(
+            func=mdp.update_navigation_targets,
+            mode="interval",
+            interval_range_s=(0.0, 0.0),  # 每个step都调用
+        )
+
+        # 重置时重置导航状态
+        self.events.reset_navigation = EventTerm(
+            func=mdp.reset_navigation_on_termination,
+            mode="reset",
+        )
+
         # 爬行时的初始化位置调整（更低的高度）
         self.events.randomize_reset_base.params = {
             "pose_range": {
@@ -213,6 +253,30 @@ class UnitreeGo2CrawlEnvCfg(LocomotionVelocityRoughEnvCfg):
             ("FR_foot", "RL_foot"),
         )
         self.rewards.upward.weight = 0.5  # 减少向上奖励
+
+        # ------------------------------导航奖励------------------------------
+        # 添加导航相关的奖励
+        self.rewards.heading_to_target = RewTerm(
+            func=mdp.heading_to_target,
+            weight=1.0,  # 鼓励朝向目标
+        )
+        self.rewards.progress_to_target = RewTerm(
+            func=mdp.progress_to_target,
+            weight=0.5,  # 鼓励接近目标
+        )
+        self.rewards.reached_target = RewTerm(
+            func=mdp.reached_target,
+            weight=10.0,  # 到达目标给予大奖励
+            params={"threshold": 0.5},
+        )
+        self.rewards.velocity_to_target = RewTerm(
+            func=mdp.velocity_to_target,
+            weight=0.8,  # 鼓励朝目标方向移动
+        )
+        self.rewards.next_goal_awareness = RewTerm(
+            func=mdp.next_goal_awareness,
+            weight=0.3,  # 鼓励考虑下一个目标
+        )
 
         # 添加爬行特定的奖励：鼓励低姿态前进
         # 这个可以通过现有的base_height和velocity tracking实现

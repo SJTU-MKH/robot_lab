@@ -92,17 +92,19 @@ class CrawlTerrainGenerator(TerrainGenerator):
                 self._add_sub_terrain(mesh, origin, sub_row, sub_col, sub_terrain_goal)
 
     def _get_terrain_mesh(
-        self, 
-        difficulty: float, 
+        self,
+        difficulty: float,
         cfg: ThreeTunnelChamberTerrainCfg,
-        ) -> tuple[trimesh.Trimesh, np.ndarray, np.ndarray]:
+    ) -> tuple[trimesh.Trimesh, np.ndarray, np.ndarray]:
         # 复制配置
         cfg: ThreeTunnelChamberTerrainCfg = cfg.copy()
         # 添加其他参数到子地形配置
         cfg.difficulty = float(difficulty)
         cfg.seed = self.cfg.seed
         # 生成地形（返回4个值：meshes, origin, goals_xy, goal_heights）
-        meshes, origin, goals_xy, goal_heights = cfg.function(difficulty, cfg, self.num_goals)
+        meshes, origin, goals_xy, goal_heights = cfg.function(
+            difficulty, cfg, self.num_goals
+        )
         mesh = trimesh.util.concatenate(meshes)
         # 偏移mesh使其位于中心
         transform = np.eye(4)
