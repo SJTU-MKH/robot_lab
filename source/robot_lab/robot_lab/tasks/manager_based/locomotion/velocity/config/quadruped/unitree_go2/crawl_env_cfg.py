@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from isaaclab.utils import configclass
+from isaaclab.terrains import TerrainImporterCfg
 
 from robot_lab.tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
     LocomotionVelocityRoughEnvCfg,
@@ -15,8 +16,11 @@ from robot_lab.tasks.manager_based.locomotion.velocity.velocity_env_cfg import (
 # use local assets
 from robot_lab.assets.unitree import UNITREE_GO2_CFG  # isort: skip
 
-# 导入爬行地形配置
+# 导入爬行地形配置和自定义导入器
 from .crawl_terrain_cfg import CRAWL_TERRAINS_CFG  # isort: skip
+from robot_lab.tasks.manager_based.locomotion.velocity.utils.terrains_asset.mesh_crawl import (
+    CrawlTerrainImporter,
+)
 
 
 @configclass
@@ -37,8 +41,18 @@ class UnitreeGo2CrawlEnvCfg(LocomotionVelocityRoughEnvCfg):
         super().__post_init__()
 
         # ------------------------------Scene------------------------------
-        # 替换地形为爬行地形（低矮障碍物和隧道）
-        self.scene.terrain.terrain_generator = CRAWL_TERRAINS_CFG
+        # 使用自定义的地形导入器和爬行地形
+        self.scene.terrain = TerrainImporterCfg(
+            class_type=CrawlTerrainImporter,
+            prim_path="/World/ground",
+            terrain_type="generator",
+            terrain_generator=CRAWL_TERRAINS_CFG,
+            max_init_terrain_level=5,
+            collision_group=-1,
+            physics_material=self.scene.terrain.physics_material,
+            visual_material=self.scene.terrain.visual_material,
+            debug_vis=False,
+        )
 
         self.scene.robot = UNITREE_GO2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         self.scene.height_scanner.prim_path = (

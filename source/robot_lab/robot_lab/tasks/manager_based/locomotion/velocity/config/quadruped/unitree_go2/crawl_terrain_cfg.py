@@ -3,13 +3,16 @@
 
 """Configuration for crawl terrain with low obstacles suitable for crawling."""
 
-import isaaclab.terrains as terrain_gen
-from .crawl_terrain_mesh_cfg import LowObstaclesTerrainCfg, TunnelTerrainCfg
+from robot_lab.tasks.manager_based.locomotion.velocity.utils.terrains_asset.mesh_crawl import (
+    ThreeTunnelChamberTerrainCfg,
+    CrawlTerrainGeneratorCfg,
+)
 
 # 使用自定义mesh地形生成器创建匍匐前进场景
 # 主要特点：需要机器人降低身体姿态爬行穿越的障碍物和隧道
+# 包含导航点系统：起点 + 3个隧道中心 + 终点
 
-CRAWL_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
+CRAWL_TERRAINS_CFG = CrawlTerrainGeneratorCfg(
     size=(8.0, 8.0),
     border_width=20.0,
     num_rows=10,
@@ -18,23 +21,16 @@ CRAWL_TERRAINS_CFG = terrain_gen.TerrainGeneratorCfg(
     vertical_scale=0.005,
     slope_threshold=0.75,
     use_cache=False,
+    num_goals=5,  # 5个导航点
     sub_terrains={
-        # 自定义低矮障碍物地形 - 需要匍匐穿越
-        "low_obstacles_mesh": LowObstaclesTerrainCfg(
-            proportion=0.5,
-            obstacle_height_range=(0.15, 0.35),  # 低矮障碍物高度
-            obstacle_spacing=1.2,  # 障碍物间距
-            obstacle_width_range=(0.8, 2.0),  # 障碍物宽度
-        ),
-        # 自定义隧道地形 - 需要爬行通过
-        "tunnel_mesh": TunnelTerrainCfg(
-            proportion=0.2,
-            tunnel_height=0.4,  # 隧道高度
-            tunnel_width=1.5,  # 隧道宽度
-        ),
-        # 平坦地形：用于恢复和基础移动
-        "flat": terrain_gen.HfRandomUniformTerrainCfg(
-            proportion=0.3, noise_range=(0.0, 0.02), noise_step=0.01, border_width=0.25
+        # 三隧道房间地形 - 四周围墙，三个不对齐的隧道，包含导航点
+        "three_tunnel_chamber": ThreeTunnelChamberTerrainCfg(
+            proportion=1.0,  # 只使用这一种地形
+            wall_height=2.0,
+            wall_thickness=1.0,
+            tunnel_wall_thickness_range=(0.2, 0.5),
+            tunnel_height_range=(0.25, 0.5),
+            tunnel_width_range=(0.5, 0.8),
         ),
     },
 )
