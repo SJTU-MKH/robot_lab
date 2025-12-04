@@ -57,18 +57,18 @@ class UnitreeGo2NaviEnvCfg(NavigationWaypointBoxGardenEnvCfg):
             "pose_range": {
                 "x": (-0.5, 0.5),
                 "y": (-0.5, 0.5),
-                "z": (0.0, 0.2),
-                "roll": (-3.14, 3.14),
-                "pitch": (-3.14, 3.14),
+                "z": (0.0, 0.0),  # 不随机化z轴，保持在地面
+                "roll": (-0.1, 0.1),  # 减小roll/pitch范围，避免翻倒
+                "pitch": (-0.1, 0.1),
                 "yaw": (-3.14, 3.14),
             },
             "velocity_range": {
                 "x": (-0.5, 0.5),
                 "y": (-0.5, 0.5),
-                "z": (-0.5, 0.5),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
+                "z": (0.0, 0.0),  # z轴速度为0，避免漂浮
+                "roll": (-0.25, 0.25),
+                "pitch": (-0.25, 0.25),
+                "yaw": (-0.25, 0.25),
             },
         }
         self.events.randomize_rigid_body_mass_base.params["asset_cfg"].body_names = [self.base_link_name]

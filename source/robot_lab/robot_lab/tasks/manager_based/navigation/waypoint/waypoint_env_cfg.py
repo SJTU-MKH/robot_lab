@@ -29,6 +29,7 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 import robot_lab.tasks.manager_based.navigation.waypoint.mdp as mdp
+
 ##
 # Pre-defined configs
 ##
@@ -43,71 +44,7 @@ from .boxgarden_terrain_cfg import BOXGARDEN_TERRAIN_CFG  # isort: skip
 @configclass
 class MySceneCfg(InteractiveSceneCfg):
     """Configuration for the terrain scene with a legged robot."""
-    box1: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Box1",
-        spawn=sim_utils.CuboidCfg(
-            size=(1.0, 1.0, 0.5),
 
-
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=True,
-                linear_damping=0.0,
-                angular_damping=0.0,
-            ),
-
-
-            mass_props=sim_utils.MassPropertiesCfg(
-                mass=5.0,
-            ),
-
-
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=0.5,
-                dynamic_friction=0.5,
-                restitution=0.0,      # 弹性
-            ),
-
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            
-            visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=(1.0, 1.0, 0.0),
-            ),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(3.0, 3.0, 0.25),
-        ),
-    )
-    box2: RigidObjectCfg = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Box2",
-        spawn=sim_utils.CuboidCfg(
-            size=(1.0, 1.0, 0.5),
-
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=True,
-                linear_damping=0.0,
-                angular_damping=0.0,
-            ),
-
-            mass_props=sim_utils.MassPropertiesCfg(
-                mass=5.0,
-            ),
-
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=0.5,
-                dynamic_friction=0.5,
-                restitution=0.0,
-            ),
-
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            
-            visual_material=sim_utils.PreviewSurfaceCfg(
-                diffuse_color=(1.0, 1.0, 0.0), 
-            ),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(3.0, -3.0, 0.25),
-        ),
-    )
     # ground terrain
     terrain = TerrainImporterCfg(
         prim_path="/World/ground",
@@ -148,7 +85,9 @@ class MySceneCfg(InteractiveSceneCfg):
         debug_vis=False,
         mesh_prim_paths=["/World/ground"],
     )
-    contact_forces = ContactSensorCfg(prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True)
+    contact_forces = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/.*", history_length=3, track_air_time=True
+    )
     # lights
     sky_light = AssetBaseCfg(
         prim_path="/World/skyLight",
@@ -177,7 +116,10 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformThresholdVelocityCommandCfg.Ranges(
-            lin_vel_x=(-1.0, 1.0), lin_vel_y=(-1.0, 1.0), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+            lin_vel_x=(-1.0, 1.0),
+            lin_vel_y=(-1.0, 1.0),
+            ang_vel_z=(-1.0, 1.0),
+            heading=(-math.pi, math.pi),
         ),
     )
 
@@ -187,7 +129,12 @@ class ActionsCfg:
     """Action specifications for the MDP."""
 
     joint_pos = mdp.JointPositionActionCfg(
-        asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True, clip=None, preserve_order=True
+        asset_name="robot",
+        joint_names=[".*"],
+        scale=0.5,
+        use_default_offset=True,
+        clip=None,
+        preserve_order=True,
     )
 
 
@@ -226,14 +173,22 @@ class ObservationsCfg:
         )
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel,
-            params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*", preserve_order=True)},
+            params={
+                "asset_cfg": SceneEntityCfg(
+                    "robot", joint_names=".*", preserve_order=True
+                )
+            },
             noise=Unoise(n_min=-0.01, n_max=0.01),
             clip=(-100.0, 100.0),
             scale=1.0,
         )
         joint_vel = ObsTerm(
             func=mdp.joint_vel_rel,
-            params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*", preserve_order=True)},
+            params={
+                "asset_cfg": SceneEntityCfg(
+                    "robot", joint_names=".*", preserve_order=True
+                )
+            },
             noise=Unoise(n_min=-1.5, n_max=1.5),
             clip=(-100.0, 100.0),
             scale=1.0,
@@ -283,13 +238,21 @@ class ObservationsCfg:
         )
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel,
-            params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*", preserve_order=True)},
+            params={
+                "asset_cfg": SceneEntityCfg(
+                    "robot", joint_names=".*", preserve_order=True
+                )
+            },
             clip=(-100.0, 100.0),
             scale=1.0,
         )
         joint_vel = ObsTerm(
             func=mdp.joint_vel_rel,
-            params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*", preserve_order=True)},
+            params={
+                "asset_cfg": SceneEntityCfg(
+                    "robot", joint_names=".*", preserve_order=True
+                )
+            },
             clip=(-100.0, 100.0),
             scale=1.0,
         )
@@ -464,30 +427,43 @@ class RewardsCfg:
 
     # Joint penalties
     joint_torques_l2 = RewTerm(
-        func=mdp.joint_torques_l2, weight=0.0, params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")}
+        func=mdp.joint_torques_l2,
+        weight=0.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")},
     )
     joint_vel_l2 = RewTerm(
-        func=mdp.joint_vel_l2, weight=0.0, params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")}
+        func=mdp.joint_vel_l2,
+        weight=0.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")},
     )
     joint_acc_l2 = RewTerm(
-        func=mdp.joint_acc_l2, weight=0.0, params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")}
+        func=mdp.joint_acc_l2,
+        weight=0.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")},
     )
 
     def create_joint_deviation_l1_rewterm(self, attr_name, weight, joint_names_pattern):
         rew_term = RewTerm(
             func=mdp.joint_deviation_l1,
             weight=weight,
-            params={"asset_cfg": SceneEntityCfg("robot", joint_names=joint_names_pattern)},
+            params={
+                "asset_cfg": SceneEntityCfg("robot", joint_names=joint_names_pattern)
+            },
         )
         setattr(self, attr_name, rew_term)
 
     joint_pos_limits = RewTerm(
-        func=mdp.joint_pos_limits, weight=0.0, params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")}
+        func=mdp.joint_pos_limits,
+        weight=0.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*")},
     )
     joint_vel_limits = RewTerm(
         func=mdp.joint_vel_limits,
         weight=0.0,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*"), "soft_ratio": 1.0},
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+            "soft_ratio": 1.0,
+        },
     )
     joint_power = RewTerm(
         func=mdp.joint_power,
@@ -556,7 +532,12 @@ class RewardsCfg:
             "asset_cfg": SceneEntityCfg("robot"),
             "joint_groups": [
                 ["FR_hip_joint", "FL_hip_joint", "RL_hip_joint", "RR_hip_joint"],
-                ["FR_thigh_joint", "FL_thigh_joint", "RL_thigh_joint", "RR_thigh_joint"],
+                [
+                    "FR_thigh_joint",
+                    "FL_thigh_joint",
+                    "RL_thigh_joint",
+                    "RR_thigh_joint",
+                ],
                 ["FR_calf_joint", "FL_calf_joint", "RL_calf_joint", "RR_calf_joint"],
             ],
         },
@@ -584,15 +565,22 @@ class RewardsCfg:
     contact_forces = RewTerm(
         func=mdp.contact_forces,
         weight=0.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=""), "threshold": 100.0},
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=""),
+            "threshold": 100.0,
+        },
     )
 
     # Velocity-tracking rewards
     track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp, weight=0.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_lin_vel_xy_exp,
+        weight=0.0,
+        params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
     )
     track_ang_vel_z_exp = RewTerm(
-        func=mdp.track_ang_vel_z_exp, weight=0.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_ang_vel_z_exp,
+        weight=0.0,
+        params={"command_name": "base_velocity", "std": math.sqrt(0.25)},
     )
 
     # Others
@@ -725,7 +713,10 @@ class TerminationsCfg:
     # Contact sensor
     illegal_contact = DoneTerm(
         func=mdp.illegal_contact,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=""), "threshold": 1.0},
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=""),
+            "threshold": 1.0,
+        },
     )
 
 
@@ -799,7 +790,9 @@ class NavigationWaypointBoxGardenEnvCfg(ManagerBasedRLEnvCfg):
                     setattr(self.rewards, attr, None)
 
 
-def create_obsgroup_class(class_name, terms, enable_corruption=False, concatenate_terms=True):
+def create_obsgroup_class(
+    class_name, terms, enable_corruption=False, concatenate_terms=True
+):
     """
     Dynamically create and register a ObsGroup class based on the given configuration terms.
 
