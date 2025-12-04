@@ -21,14 +21,41 @@ def joint_pos_rel_without_wheel(
     """The joint positions of the asset w.r.t. the default joint positions.(Without the wheel joints)"""
     # extract the used quantities (to enable type-hinting)
     asset: Articulation = env.scene[asset_cfg.name]
-    joint_pos_rel = asset.data.joint_pos[:, asset_cfg.joint_ids] - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+    joint_pos_rel = (
+        asset.data.joint_pos[:, asset_cfg.joint_ids]
+        - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+    )
     joint_pos_rel[:, wheel_asset_cfg.joint_ids] = 0
     return joint_pos_rel
 
 
 def phase(env: ManagerBasedRLEnv, cycle_time: float) -> torch.Tensor:
     if not hasattr(env, "episode_length_buf") or env.episode_length_buf is None:
-        env.episode_length_buf = torch.zeros(env.num_envs, device=env.device, dtype=torch.long)
+        env.episode_length_buf = torch.zeros(
+            env.num_envs, device=env.device, dtype=torch.long
+        )
     phase = env.episode_length_buf[:, None] * env.step_dt / cycle_time
-    phase_tensor = torch.cat([torch.sin(2 * torch.pi * phase), torch.cos(2 * torch.pi * phase)], dim=-1)
+    phase_tensor = torch.cat(
+        [torch.sin(2 * torch.pi * phase), torch.cos(2 * torch.pi * phase)], dim=-1
+    )
     return phase_tensor
+
+
+def generated_commands(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
+    """The generated commands from the command manager."""
+    return env.command_manager.get_command(command_name)
+
+
+def base_height_above_terrain(
+    env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")
+) -> torch.Tensor:
+    """The height of the robot base above the terrain origin."""
+    asset = env.scene[asset_cfg.name]
+    return asset.data.root_pos_w[:, 2:3] - env.scene.terrain.env_origins[:, 2:3]
+
+
+def base_height_command(env: ManagerBasedRLEnv, command_name: str) -> torch.Tensor:
+    """The target height command from the heading field of the velocity command."""
+    return env.command_manager.get_command(command_name)[
+        :, 2:3
+    ]  # heading field as height
