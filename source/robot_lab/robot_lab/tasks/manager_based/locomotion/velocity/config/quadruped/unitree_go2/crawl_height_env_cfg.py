@@ -283,6 +283,14 @@ class UnitreeGo2CrawlHeightEnvCfg(UnitreeGo2RoughEnvCfg):
             self.rewards.feet_height.weight = 0
         if self.rewards.upward is not None:
             self.rewards.upward.weight = 0
+        
+        # 禁用轮式机器人的奖励（Go2没有轮子）
+        if hasattr(self.rewards, 'wheel_vel_penalty') and self.rewards.wheel_vel_penalty is not None:
+            self.rewards.wheel_vel_penalty = None
+        
+        # 禁用可能有配置问题的奖励
+        if hasattr(self.rewards, 'feet_distance_y_exp') and self.rewards.feet_distance_y_exp is not None:
+            self.rewards.feet_distance_y_exp = None
 
         # 禁用零权重奖励
         if self.__class__.__name__ == "UnitreeGo2CrawlHeightEnvCfg":
