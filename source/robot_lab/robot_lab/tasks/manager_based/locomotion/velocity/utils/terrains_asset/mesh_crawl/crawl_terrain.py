@@ -82,6 +82,12 @@ def three_tunnel_chamber_generator(
     goals = np.zeros((num_goals, 2))
     goal_heights = np.zeros(num_goals)
 
+    # 设置起点（索引0）：入口处中央位置
+    start_x = width / 2
+    start_y = wall_thickness + 0.3  # 入口墙后0.3米
+    goals[0] = [start_x, start_y]
+    goal_heights[0] = 0.15  # 爬行高度
+
     # 三个隧道的Y位置（分隔位置）
     divider_positions = [inner_length / 3, 2 * inner_length / 3]
 
@@ -169,10 +175,17 @@ def three_tunnel_chamber_generator(
             }
         )
 
-    # 设置导航点
-    for i in range(min(num_goals, len(tunnel_configs))):
-        goals[i] = [tunnel_configs[i]["center_x"], tunnel_configs[i]["center_y"]]
-        goal_heights[i] = tunnel_configs[i]["height"]
+    # 设置导航点（索引1-3为三个隧道）
+    for i in range(min(3, len(tunnel_configs))):
+        goals[i + 1] = [tunnel_configs[i]["center_x"], tunnel_configs[i]["center_y"]]
+        goal_heights[i + 1] = tunnel_configs[i]["height"]
+
+    # 设置终点（索引4）：出口处中央位置
+    if num_goals >= 5:
+        end_x = width / 2
+        end_y = length - wall_thickness - 0.3  # 出口墙前0.3米
+        goals[4] = [end_x, end_y]
+        goal_heights[4] = 0.15  # 爬行高度
 
     origin = np.array([0.0, 0.0, 0.0])
     return meshes, origin, goals, goal_heights

@@ -25,7 +25,7 @@ from robot_lab.tasks.manager_based.locomotion.velocity.utils.terrains_asset.mesh
     CrawlTerrainImporter,
 )
 
-# 导入导航MDP函数
+# 导入导航MDP函数和命令生成器
 from robot_lab.tasks.manager_based.locomotion.velocity import mdp
 
 
@@ -127,25 +127,20 @@ class UnitreeGo2CrawlEnvCfg(LocomotionVelocityRoughEnvCfg):
             mode="reset",
         )
 
-        # 爬行时的初始化位置调整（更低的高度）
-        self.events.randomize_reset_base.params = {
-            "pose_range": {
-                "x": (-0.5, 0.5),
-                "y": (-0.5, 0.5),
-                "z": (0.0, 0.15),  # 降低初始高度
-                "roll": (-0.5, 0.5),  # 减小初始姿态变化
-                "pitch": (-0.5, 0.5),
-                "yaw": (-3.14, 3.14),
-            },
-            "velocity_range": {
-                "x": (-0.3, 0.3),
-                "y": (-0.3, 0.3),
-                "z": (-0.3, 0.3),
-                "roll": (-0.3, 0.3),
-                "pitch": (-0.3, 0.3),
-                "yaw": (-0.3, 0.3),
-            },
-        }
+        # 将机器人重置到第一个导航点（起点）位置
+        self.events.reset_robot_position = EventTerm(
+            func=mdp.reset_robot_to_start_position,
+            mode="reset",
+        )
+
+        # 根据导航表现调整地形难度（课程学习）
+        self.events.adjust_difficulty = EventTerm(
+            func=mdp.adjust_terrain_difficulty,
+            mode="reset",
+        )
+
+        # 移除原来的随机位置重置（使用Parkour风格的固定起点重置）
+        self.events.randomize_reset_base = None
         self.events.randomize_rigid_body_mass_base.params["asset_cfg"].body_names = [
             self.base_link_name
         ]
@@ -295,7 +290,12 @@ class UnitreeGo2CrawlEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.curriculum.command_levels = None
 
         # ------------------------------Commands------------------------------
-        # 爬行时的速度命令范围
-        # self.commands.base_velocity.ranges.lin_vel_x = (-0.8, 0.8)  # 降低最大前进速度
-        # self.commands.base_velocity.ranges.lin_vel_y = (-0.3, 0.3)  # 降低侧向速度
-        # self.commands.base_velocity.ranges.ang_vel_z = (-0.8, 0.8)  # 降低角速度
+        # 使用导航命令生成器，根据导航点自动生成速度命令
+        self.commands.base_velocity = mdp.NavigationCommandCfg(
+            asset_name="robot",
+            lin_vel_x_range=(0.3, 0.8),  # 爬行的前进速度范围
+            ang_vel_z_range=(-0.8, 0.8),  # 允许的最大转向速度
+            heading_control_stiffness=0.5,  # 朝向控制刚度
+            resampling_time_range=(10.0, 10.0),  # 命令重采样时间
+            debug_vis=True,  # 启用可视化：绿色=目标速度，蓝色=实际速度
+        )

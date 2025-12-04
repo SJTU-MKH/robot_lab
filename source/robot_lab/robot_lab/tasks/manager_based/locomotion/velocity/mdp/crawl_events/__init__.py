@@ -4,12 +4,16 @@
 """Crawl navigation MDP components."""
 
 from .crawl_navigation_event import CrawlNavigationEvent
+from .crawl_command import NavigationCommand, NavigationCommandCfg
 from .crawl_observations import *
 from .crawl_rewards import *
 from .crawl_events import *
+from .crawl_reset_events import *
 
 __all__ = [
     "CrawlNavigationEvent",
+    "NavigationCommand",
+    "NavigationCommandCfg",
     # Observations
     "target_direction",
     "target_distance",
@@ -27,4 +31,7 @@ __all__ = [
     "initialize_navigation_system",
     "update_navigation_targets",
     "reset_navigation_on_termination",
+    # Reset events
+    "reset_robot_to_start_position",
+    "adjust_terrain_difficulty",
 ]

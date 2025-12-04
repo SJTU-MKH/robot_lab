@@ -29,20 +29,15 @@ def heading_to_target(
         return torch.zeros(env.num_envs, device=env.device)
 
     robot: Articulation = env.scene[asset_cfg.name]
-    
-    # 从四元数获取yaw角，计算朝向向量
+
+    # 从四元数获取yaw角
     _, _, robot_yaw = euler_xyz_from_quat(robot.data.root_quat_w)
+
+    # 计算朝向向量 [cos(yaw), sin(yaw)]
     robot_heading = torch.stack([torch.cos(robot_yaw), torch.sin(robot_yaw)], dim=-1)
 
-    # 归一化朝向向量
-    robot_heading_norm = robot_heading / (
-        torch.norm(robot_heading, dim=-1, keepdim=True) + 1e-5
-    )
-
     # 计算朝向与目标方向的对齐度（点积）
-    alignment = torch.sum(
-        robot_heading_norm * env.navigation_event.target_dir_norm, dim=-1
-    )
+    alignment = torch.sum(robot_heading * env.navigation_event.target_dir_norm, dim=-1)
 
     return alignment
 
@@ -131,18 +126,16 @@ def next_goal_awareness(
         return torch.zeros(env.num_envs, device=env.device)
 
     robot: Articulation = env.scene[asset_cfg.name]
-    
-    # 从四元数获取yaw角，计算朝向向量
+
+    # 从四元数获取yaw角
     _, _, robot_yaw = euler_xyz_from_quat(robot.data.root_quat_w)
+
+    # 计算朝向向量 [cos(yaw), sin(yaw)]
     robot_heading = torch.stack([torch.cos(robot_yaw), torch.sin(robot_yaw)], dim=-1)
-    
-    robot_heading_norm = robot_heading / (
-        torch.norm(robot_heading, dim=-1, keepdim=True) + 1e-5
-    )
 
     # 计算朝向与下一个目标方向的对齐度
     alignment = torch.sum(
-        robot_heading_norm * env.navigation_event.next_target_dir_norm, dim=-1
+        robot_heading * env.navigation_event.next_target_dir_norm, dim=-1
     )
 
     # 只在接近当前目标时才给予奖励
