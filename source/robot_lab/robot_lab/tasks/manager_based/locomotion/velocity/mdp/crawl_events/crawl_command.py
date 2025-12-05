@@ -222,7 +222,8 @@ class NavigationCommand(CommandTerm):
         default_scale = self.goal_vel_visualizer.cfg.markers["arrow"].scale
 
         # Arrow scale (length proportional to velocity magnitude)
-        arrow_scale = torch.tensor(default_scale, device=self.device).repeat(
+        # Ensure arrow_scale is on the same device as xy_velocity
+        arrow_scale = torch.tensor(default_scale, device=xy_velocity.device).repeat(
             xy_velocity.shape[0], 1
         )
         arrow_scale[:, 0] *= torch.linalg.norm(xy_velocity, dim=1) * 3.0

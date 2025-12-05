@@ -16,13 +16,13 @@ parser = argparse.ArgumentParser(description="手动控制机器人")
 parser.add_argument(
     "--task",
     type=str,
-    default="RobotLab-Isaac-Navigation-Waypoint-Unitree-Go2-v0",
+    default="custom_boxgarden",
     help="任务名称",
 )
 parser.add_argument(
     "--checkpoint",
     type=str,
-    default="/workspace/robot_lab/logs/rsl_rl/unitree_go2_rough/2025-11-20_15-14-46/model_9000.pt",
+    default="/workspace/robot_lab/logs/rsl_rl/unitree_go2_rough/2025-12-04_03-10-41/model_14999.pt",
     help="模型checkpoint路径",
 )
 parser.add_argument("--num_envs", type=int, default=1, help="环境数量")
@@ -39,6 +39,7 @@ from isaaclab.envs import ManagerBasedRLEnv
 
 # 导入任务注册
 import robot_lab.tasks  # noqa: F401
+from boxgarden_crawl_env_cfg import BoxGardenCrawlCompatEnvCfg_PLAY
 
 
 class ManualController:
@@ -229,12 +230,16 @@ def main():
         simulation_app.close()
         return
 
-    # 加载环境配置和代理配置
+    # 使用自定义BoxGarden环境配置
     from isaaclab_tasks.utils.parse_cfg import load_cfg_from_registry
 
-    print(f"[INFO] 创建环境: {args_cli.task}")
-    env_cfg = load_cfg_from_registry(args_cli.task, "env_cfg_entry_point")
-    agent_cfg = load_cfg_from_registry(args_cli.task, "rsl_rl_cfg_entry_point")
+    print(f"[INFO] 使用自定义BoxGarden环境（兼容爬行高度checkpoint）")
+    env_cfg = BoxGardenCrawlCompatEnvCfg_PLAY()
+    # 使用爬行高度的agent配置
+    agent_cfg = load_cfg_from_registry(
+        "RobotLab-Isaac-Velocity-CrawlHeight-Unitree-Go2-Play-v0",
+        "rsl_rl_cfg_entry_point",
+    )
 
     # 手动控制模式：只使用1个机器人
     env_cfg.scene.num_envs = 1
@@ -261,7 +266,9 @@ def main():
     print(f"[INFO] 设置手动控制模式：1个机器人，禁用超时重置")
 
     # 创建环境
-    env = gym.make(args_cli.task, cfg=env_cfg, render_mode=None)
+    from isaaclab.envs import ManagerBasedRLEnv
+
+    env = ManagerBasedRLEnv(cfg=env_cfg, render_mode=None)
 
     # 创建控制器并运行
     controller = ManualController(env, args_cli.checkpoint, agent_cfg)
