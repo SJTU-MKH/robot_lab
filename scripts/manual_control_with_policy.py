@@ -26,6 +26,9 @@ parser.add_argument(
     help="模型checkpoint路径",
 )
 parser.add_argument("--num_envs", type=int, default=1, help="环境数量")
+parser.add_argument("--enable_lidar", action="store_true", default=True, help="启用激光雷达传感器")
+parser.add_argument("--lidar_vis", action="store_true", default=True, help="可视化激光雷达数据")
+parser.add_argument("--lidar_rays", type=int, default=32, choices=[16, 32, 64], help="激光雷达光束数量")
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 
@@ -36,6 +39,8 @@ simulation_app = app_launcher.app
 # 现在可以导入其他模块
 import gymnasium as gym
 from isaaclab.envs import ManagerBasedRLEnv
+from isaaclab.sensors import RayCasterCfg, patterns
+from isaaclab.managers import SceneEntityCfg
 
 # 导入任务注册
 import robot_lab.tasks  # noqa: F401
@@ -45,10 +50,11 @@ from boxgarden_crawl_env_cfg import BoxGardenCrawlCompatEnvCfg_PLAY
 class ManualController:
     """手动控制器 - 通过键盘控制机器人"""
 
-    def __init__(self, env: ManagerBasedRLEnv, policy_path: str, agent_cfg):
+    def __init__(self, env: ManagerBasedRLEnv, policy_path: str, agent_cfg, enable_lidar_vis: bool = False):
         self.env = env.unwrapped if hasattr(env, "unwrapped") else env
         self.device = self.env.device
         self.agent_cfg = agent_cfg
+        self.enable_lidar_vis = enable_lidar_vis
 
         # 手动命令
         self.lin_vel_x = 0.0
@@ -60,6 +66,12 @@ class ManualController:
 
         # 加载策略网络 (this also sets self.env_wrapper)
         self.policy = self._load_policy(policy_path)
+        
+        # 检查是否有激光雷达
+        self.has_lidar = hasattr(self.env.scene, "lidar")
+        if self.has_lidar:
+            print(f"[INFO] 检测到激光雷达传感器: {self.env.scene.lidar}")
+        
         print("\n" + "=" * 60)
         print("手动控制模式 - 增量式控制")
         print("=" * 60)
@@ -68,6 +80,8 @@ class ManualController:
         print("  A/D: 左移速度 +0.1/-0.1")
         print("  Q/E: 旋转速度 +0.2/-0.2")
         print("  Space: 停止")
+        if self.has_lidar:
+            print("  L: 切换激光雷达可视化")
         print("  ESC: 退出")
         print("=" * 60 + "\n")
 
@@ -164,6 +178,14 @@ class ManualController:
         if is_key_pressed(carb.input.KeyboardInput.ESCAPE):
             return False
 
+        # L - 切换激光雷达可视化
+        if self.has_lidar and is_key_pressed(carb.input.KeyboardInput.L):
+            self.enable_lidar_vis = not self.enable_lidar_vis
+            # 切换debug_vis
+            if hasattr(self.env.scene.lidar, "cfg"):
+                self.env.scene.lidar.cfg.debug_vis = self.enable_lidar_vis
+            print(f"[INFO] 激光雷达可视化: {'开启' if self.enable_lidar_vis else '关闭'}")
+
         return True
 
     def set_command(self):
@@ -200,6 +222,15 @@ class ManualController:
             # 执行动作 (wrapper returns obs, rewards, dones, extras)
             obs, rewards, dones, extras = self.env_wrapper.step(actions)
 
+            # 打印激光雷达信息
+            if self.has_lidar and self.env.episode_length_buf[0] % 50 == 0:
+                lidar_data = self.env.scene.lidar.data
+                if hasattr(lidar_data, "distances"):
+                    distances = lidar_data.distances[0].cpu()  # 第一个环境
+                    min_dist = distances.min().item()
+                    mean_dist = distances.mean().item()
+                    print(f"[LIDAR] 最近障碍物: {min_dist:.2f}m, 平均距离: {mean_dist:.2f}m")
+
             # 打印当前状态
             if self.env.episode_length_buf[0] % 50 == 0:
                 print(
@@ -235,6 +266,31 @@ def main():
 
     print(f"[INFO] 使用自定义BoxGarden环境（兼容爬行高度checkpoint）")
     env_cfg = BoxGardenCrawlCompatEnvCfg_PLAY()
+    
+    # 添加激光雷达传感器
+    if args_cli.enable_lidar:
+        print(f"[INFO] 添加激光雷达传感器 ({args_cli.lidar_rays} 光束)")
+        
+        # 创建激光雷达配置
+        lidar_cfg = RayCasterCfg(
+            prim_path="{ENV_REGEX_NS}/Robot/base",
+            offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 0.2)),  # 在base上方20cm
+            ray_alignment="yaw",  # 只跟随yaw旋转
+            pattern_cfg=patterns.LidarPatternCfg(
+                channels=1,  # 单线激光雷达
+                vertical_fov_range=(0.0, 0.0),  # 水平扫描
+                horizontal_fov_range=(-180.0, 180.0),  # 360度
+                horizontal_res=360.0 / args_cli.lidar_rays,  # 根据光束数计算分辨率
+            ),
+            max_distance=10.0,  # 最大检测距离10米
+            drift_range=(0.0, 0.0),  # 无漂移
+            debug_vis=args_cli.lidar_vis,  # 可视化
+            mesh_prim_paths=["/World/ground"],  # 检测地面
+        )
+        
+        # 添加到场景配置
+        env_cfg.scene.lidar = lidar_cfg
+    
     # 使用爬行高度的agent配置
     agent_cfg = load_cfg_from_registry(
         "RobotLab-Isaac-Velocity-CrawlHeight-Unitree-Go2-Play-v0",
@@ -271,7 +327,7 @@ def main():
     env = ManagerBasedRLEnv(cfg=env_cfg, render_mode=None)
 
     # 创建控制器并运行
-    controller = ManualController(env, args_cli.checkpoint, agent_cfg)
+    controller = ManualController(env, args_cli.checkpoint, agent_cfg, enable_lidar_vis=args_cli.lidar_vis)
     controller.run()
 
     # 关闭环境
