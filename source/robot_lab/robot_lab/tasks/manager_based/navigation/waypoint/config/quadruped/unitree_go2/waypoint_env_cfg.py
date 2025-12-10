@@ -3,7 +3,7 @@
 
 from isaaclab.utils import configclass
 
-from robot_lab.tasks.manager_based.locomotion.velocity.velocity_env_cfg import LocomotionVelocityRoughEnvCfg
+from robot_lab.tasks.manager_based.navigation.waypoint.waypoint_env_cfg import NavigationWaypointBoxGardenEnvCfg
 
 ##
 # Pre-defined configs
@@ -15,7 +15,7 @@ from robot_lab.assets.unitree import UNITREE_GO2_CFG  # isort: skip
 
 
 @configclass
-class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
+class UnitreeGo2NaviEnvCfg(NavigationWaypointBoxGardenEnvCfg):
     base_link_name = "base"
     foot_link_name = ".*_foot"
     # fmt: off
@@ -147,7 +147,7 @@ class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.upward.weight = 1.0
 
         # If the weight of rewards is 0, set rewards to None
-        if self.__class__.__name__ == "UnitreeGo2RoughEnvCfg":
+        if self.__class__.__name__ == "UnitreeGo2NaviEnvCfg":
             self.disable_zero_weight_rewards()
 
         # ------------------------------Terminations------------------------------

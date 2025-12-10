@@ -13,9 +13,12 @@ from robot_lab.tasks.manager_based.locomotion.velocity.velocity_env_cfg import L
 # use local assets
 from robot_lab.assets.unitree import UNITREE_GO2_CFG  # isort: skip
 
+# 导入2阶台阶地形配置
+from .stairs_terrain_cfg import TWO_STEP_STAIRS_CFG  # isort: skip
+
 
 @configclass
-class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
+class UnitreeGo2ClimbEnvCfg(LocomotionVelocityRoughEnvCfg):
     base_link_name = "base"
     foot_link_name = ".*_foot"
     # fmt: off
@@ -31,7 +34,10 @@ class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         # post init of parent
         super().__post_init__()
 
-        # ------------------------------Sence------------------------------
+        # ------------------------------Scene------------------------------
+        # 替换地形为2阶台阶
+        self.scene.terrain.terrain_generator = TWO_STEP_STAIRS_CFG
+        
         self.scene.robot = UNITREE_GO2_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
         self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/" + self.base_link_name
         self.scene.height_scanner_base.prim_path = "{ENV_REGEX_NS}/Robot/" + self.base_link_name
@@ -147,7 +153,7 @@ class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.upward.weight = 1.0
 
         # If the weight of rewards is 0, set rewards to None
-        if self.__class__.__name__ == "UnitreeGo2RoughEnvCfg":
+        if self.__class__.__name__ == "UnitreeGo2ClimbEnvCfg":
             self.disable_zero_weight_rewards()
 
         # ------------------------------Terminations------------------------------
@@ -155,6 +161,8 @@ class UnitreeGo2RoughEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.terminations.illegal_contact = None
 
         # ------------------------------Curriculums------------------------------
+        # 启用地形难度课程学习（从简单到难的台阶）
+        # self.curriculum.terrain_levels 保持启用（从父类继承）
         # self.curriculum.command_levels.params["range_multiplier"] = (0.2, 1.0)
         self.curriculum.command_levels = None
 

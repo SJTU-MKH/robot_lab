@@ -119,30 +119,32 @@ UNITREE_GO2_CFG = ArticulationCfg(
 """
 
 UNITREE_GO2W_CFG = ArticulationCfg(
-    spawn=sim_utils.UrdfFileCfg(
-        fix_base=False,
-        merge_fixed_joints=True,
-        replace_cylinders_with_capsules=False,
+    spawn=sim_utils.UrdfFileCfg(  # 机器人的URDF文件导入配置
+        fix_base=False,  # 代表机器人可以移动
+        merge_fixed_joints=True,  # 告诉导入器将所有通过fixed（固定）关节连接的连杆（link）合并成一个单独的、更大的连杆。这样做可以减少仿真中需要处理的物体数量，显著提高性能，因为物理引擎不需要再计算这些固定关节的约束。
+        replace_cylinders_with_capsules=False,  # 不将URDF中定义的圆柱体（cylinder）碰撞体自动替换为胶囊体（capsule）。胶囊体在某些情况下可以提供更快、更稳定的碰撞检测，但这里选择保留URDF原始的定义。
         asset_path=f"{ISAACLAB_ASSETS_DATA_DIR}/Robots/unitree/go2w_description/urdf/go2w_description.urdf",
-        activate_contact_sensors=True,
-        rigid_props=sim_utils.RigidBodyPropertiesCfg(
-            disable_gravity=False,
-            retain_accelerations=False,
-            linear_damping=0.0,
-            angular_damping=0.0,
+        activate_contact_sensors=True,  # 自动为机器人上的每一个碰撞体（collision shape）都启用接触传感器。这意味着你可以在代码中查询每个连杆是否与环境发生碰撞以及碰撞的力有多大。
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(  # 为机器人上的**每一个单独的连杆（刚体）**设置通用的物理属性。
+            disable_gravity=False,  # 对这个机器人的所有连杆启用重力。
+            retain_accelerations=False,  # 不保留上一帧的加速度信息。这是一个高级物理设置，通常保持False。
+            linear_damping=0.0,  # 设置刚体的线性。0.0意味着没有额外的“空气阻力”，刚体的运动将只由物理引擎的接触和关节约束决定。
+            angular_damping=0.0,  # 角度阻尼
             max_linear_velocity=1000.0,
             max_angular_velocity=1000.0,
-            max_depenetration_velocity=1.0,
+            max_depenetration_velocity=1.0,  # 设置当物体发生穿透时，物理引擎将其“推”出来的最大速度。这是一个用于提高仿真稳定性的参数。
         ),
-        articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=False, solver_position_iteration_count=4, solver_velocity_iteration_count=0
+        articulation_props=sim_utils.ArticulationRootPropertiesCfg(  # 为整个关节机器人作为一个整体设置物理属性
+            enabled_self_collisions=False,  # 禁用机器人连杆之间的自碰撞。这对于性能和稳定性至关重要。如果为True，机器人的大腿可能会和自己的身体碰撞，这通常是我们不希望发生的。
+            solver_position_iteration_count=4,  # solver_..._iteration_count: 设置物理求解器的迭代次数。position_iteration_count用于约束位置，
+            solver_velocity_iteration_count=0  # velocity_iteration_count用于约束速度。较高的值可以提高仿真的精度，但会牺牲性能。4和0是PhysX中常见的默认值。
         ),
         joint_drive=sim_utils.UrdfConverterCfg.JointDriveCfg(
             gains=sim_utils.UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=0, damping=0)
-        ),
+        ),  # 这个参数允许在URDF导入阶段为关节设置默认的驱动模式和增益。这里将默认的PD控制器的stiffness（刚度）和damping（阻尼）都设为0。这非常重要，因为它意味着我们不使用URDF中可能存在的<dynamics>标签的参数，而是稍后通过actuators部分来完全定义关节的驱动行为。
     ),
-    init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.45),
+    init_state=ArticulationCfg.InitialStateCfg(  # 机器人的初始状态
+        pos=(0.0, 0.0, 0.45),  # 机器人的初始位置，放置在世界坐标系的(0, 0, 0.45)处，确保机器人一开始悬空，避免与地面重叠。
         joint_pos={
             ".*L_hip_joint": 0.0,
             ".*R_hip_joint": -0.0,
@@ -151,18 +153,18 @@ UNITREE_GO2W_CFG = ArticulationCfg(
             ".*_calf_joint": -1.5,
             ".*_foot_joint": 0.0,
         },
-        joint_vel={".*": 0.0},
+        joint_vel={".*": 0.0},  # 设置每个关节的初始速度。{".*": 0.0}表示所有关节的初始速度都为0
     ),
-    soft_joint_pos_limit_factor=0.9,
-    actuators={
-        "legs": DCMotorCfg(
+    soft_joint_pos_limit_factor=0.9,  # 设置软关节限制的因子。当关节位置达到其在URDF中定义的limit的90%时，物理引擎会开始施加一个反作用力来模拟机械限位，这可以使仿真更稳定。
+    actuators={  # 这是最关键的部分之一，它定义了机器人的驱动器模型。它将URDF中的关节映射到具体的执行器模型上，并定义它们的物理属性（如力矩限制、PD增益等）。这里定义了两个驱动器组。
+        "legs": DCMotorCfg(  # 指定了驱动器模型为直流电机模型。这是一个更真实的模型，它模拟了电机的齿轮减速比、峰值力矩和速度等特性
             joint_names_expr=["^(?!.*_foot_joint).*"],
             effort_limit=23.5,
             saturation_effort=23.5,
             velocity_limit=30.0,
-            stiffness=25.0,
+            stiffness=25.0,  # 这两个参数定义了驱动器内部的PD控制器的P（比例）和D（微分）增益。当你向这个驱动器发送一个目标位置时，它会使用stiffness和damping来计算需要施加的力矩
             damping=0.5,
-            friction=0.0,
+            friction=0.0,  # 驱动器的静摩擦力。
         ),
         "wheels": ImplicitActuatorCfg(
             joint_names_expr=[".*_foot_joint"],
